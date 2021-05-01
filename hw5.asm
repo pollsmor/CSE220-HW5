@@ -77,6 +77,16 @@ add_N_terms_to_polynomial:
 		notTerminalTerm:		
 		# Check exponent is not already in the polynomial
 		lw $t0, 0($s0)
+		bne $t0, $0, exp_exists_loop
+		# Empty polynomial, create term and put it as head
+		move $a0, $s4
+		move $a1, $s5
+		jal create_term
+		sw $v0, 0($s0)
+		addi $s3, $s3, 1	# Increment terms added
+		addi $s2, $s2, -1	# Decrement N
+		j advance_add_terms_loop
+		
 		exp_exists_loop:
 			lw $t1, 4($t0)			# Get exponent of current term
 			beq $t1, $s5, advance_add_terms_loop
@@ -215,10 +225,11 @@ get_Nth_term:
 	# Assume no term exists
 	li $v0, -1
 	li $v1, 0
+	ble $a1, $0, return_get_Nth_term		# Can't have negative term
 
 	lw $t0, 0($a0)				# Get first term
 	get_Nth_term_loop:
-		ble $t0, $0, return_get_Nth_term	# End of polynomial reached
+		beq $t0, $0, return_get_Nth_term	# End of polynomial reached
 		addi $a1, $a1, -1
 		beq $a1, $0, NthTermReached
 		lw $t0, 8($t0)				# Move on to next term
@@ -232,7 +243,44 @@ get_Nth_term:
 	jr $ra
 	
 remove_Nth_term:
+	# Assume no term exists
+	li $v0, -1
+	li $v1, 0
+	ble $a1, $0, return_get_Nth_term		# Can't have negative term
+
+	lw $t0, 0($a0)					# Get first term
+	li $t1, 1
+	bne $t1, $a1, remove_Nth_term_loop
+	# Handle N input of 1
+	beq $t0, $0, return_remove_Nth_term		# Handle empty polynomial
+	lw $v0, 4($t0)					# Exponent return value
+	lw $v1, 0($t0)					# Coefficient return value
+	lw $t0, 8($t0)					# Get next term of first term
+	sw $t0, 0($a0)					# Store next term as new first term
+	j return_remove_Nth_term
 	
+	remove_Nth_term_loop:
+		beq $t0, $0, return_get_Nth_term	# End of polynomial reached
+		addi $a1, $a1, -1
+		beq $a1, $0, NthTermReached2
+		move $t1, $t0				# Store previous middle term as left term (1)
+		lw $t0, 8($t0)				# Move on to middle term (2)
+		beq $t0, $0, reachedLastTerm
+		lw $t2, 8($t0)				# Get right term (3)
+		j advance_remove_Nth_term_loop
+		
+		reachedLastTerm:
+		li $t2, 0
+		advance_remove_Nth_term_loop:
+		j remove_Nth_term_loop
+	
+	NthTermReached2:
+	sw $t2, 8($t1)		# Store curr -> next as prev -> next
+	lw $v0, 4($t0)		# Exponent
+	lw $v1, 0($t0)		# Coefficient
+
+	return_remove_Nth_term:
+	jr $ra
 
 	jr $ra
 	
