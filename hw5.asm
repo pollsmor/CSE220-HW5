@@ -212,9 +212,28 @@ update_N_terms_in_polynomial:
 	jr $ra
 	
 get_Nth_term:
+	# Assume no term exists
+	li $v0, -1
+	li $v1, 0
+
+	lw $t0, 0($a0)				# Get first term
+	get_Nth_term_loop:
+		ble $t0, $0, return_get_Nth_term	# End of polynomial reached
+		addi $a1, $a1, -1
+		beq $a1, $0, NthTermReached
+		lw $t0, 8($t0)				# Move on to next term
+		j get_Nth_term_loop
+	
+	NthTermReached:
+	lw $v0, 4($t0)
+	lw $v1, 0($t0)
+
+	return_get_Nth_term:
 	jr $ra
 	
 remove_Nth_term:
+	
+
 	jr $ra
 	
 add_poly:
