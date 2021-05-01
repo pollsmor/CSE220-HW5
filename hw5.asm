@@ -46,10 +46,6 @@ init_polynomial:
 	jr $ra
 	
 add_N_terms_to_polynomial:
-	# N of 0 or less
-	li $v0, 0
-	ble $a2, $0, return_add_N_terms_to_polynomial
-
 	addi $sp, $sp, -28
 	sw $ra, 0($sp)
 	sw $s0, 4($sp)		# Store pointer to head of polynomial
@@ -62,6 +58,10 @@ add_N_terms_to_polynomial:
 	move $s1, $a1
 	move $s2, $a2
 	li $s3, 0	
+	
+	# N of 0 or less
+	li $v0, 0
+	ble $s2, $0, return_add_N_terms_to_polynomial
 
 	add_terms_loop:	
 		lw $s4, 0($s1)		# Coefficient
@@ -132,8 +132,83 @@ add_N_terms_to_polynomial:
 	jr $ra
 
 update_N_terms_in_polynomial:
+	addi $sp, $sp, -28
+	sw $ra, 0($sp)
+	sw $s0, 4($sp)		# Store pointer to head of polynomial
+	sw $s1, 8($sp)		# Store terms array
+	sw $s2, 12($sp)		# Store N
+	sw $s3, 16($sp)		# Store return value (number of terms updated)
+	sw $s4, 20($sp)		# Store current coefficient
+	sw $s5, 24($sp)		# Store current exponent
+	move $s0, $a0
+	move $s1, $a1
+	move $s2, $a2
+	li $s3, 0	
 	
+	# N of 0 or less
+	li $v0, 0
+	ble $s2, $0, return_update_N_terms_in_polynomial
 
+	update_terms_loop:	
+		lw $s4, 0($s1)		# Coefficient
+		lw $s5, 4($s1)		# Exponent
+	
+		# Check if term is (0, -1)
+		bne $s4, $0, notTerminalTerm2
+		li $t0, -1
+		bne $s5, $t0, notTerminalTerm2
+		move $v0, $s3
+		j return_update_N_terms_in_polynomial 	# Pair (0, -1) found
+	
+		notTerminalTerm2:					
+		# Don't need to create new term, just update old one
+		beq $s4, $0, advance_update_terms_loop		# Coefficient of 0
+		blt $s5, $0, advance_update_terms_loop		# Exponent < 0
+		
+		lw $t0, 0($s0)		# First term of polynomial
+		find_where_to_update_loop:
+			lw $t1, 4($t0)			# Get exponent of current term
+			beq $t1, $s5, spot_found2	# Replace coefficient at current term	
+			lw $t0, 8($t0)			# Move to next term
+			bne $t0, $0, find_where_to_update_loop
+		j advance_update_terms_loop		# Exponent not found in polynomial, skip
+		
+		spot_found2:		
+		sw $s4, 0($t0)		# Update coefficient at appropriate term
+		
+		move $t0, $sp		
+		li $t1, 0		# Loop counter denoting amount of bytes to move on $sp
+		sll $t2, $s3, 2		# End condition = 4 * relevant elements on $sp
+		addi $s2, $s2, -1	# Decrement N
+		contains_loop:
+			lw $t3, 0($t0)
+			beq $t3, $s5, advance_update_terms_loop
+			addi $t0, $t0, 4
+			addi $t1, $t1, 4
+			blt $t1, $t2, contains_loop
+		
+		addi $sp, $sp, -4
+		sw $s5, 0($sp)
+		addi $s3, $s3, 1	# Increment terms updated
+		# ======================================================================================
+	
+		advance_update_terms_loop:
+		addi $s1, $s1, 8	# Increment terms array by 2 words
+		bne $s2, $0, update_terms_loop
+
+	move $v0, $s3			# In case $s2 reaches 0
+	return_update_N_terms_in_polynomial:
+	sll $s3, $s3, 2			# Restore stack space used to store updated exponents
+	add $sp, $sp, $s3
+	
+	lw $ra, 0($sp)
+	lw $s0, 4($sp)		
+	lw $s1, 8($sp)		
+	lw $s2, 12($sp)		
+	lw $s3, 16($sp)		
+	lw $s4, 20($sp)
+	lw $s5, 24($sp)
+	addi $sp, $sp, 28
 	jr $ra
 	
 get_Nth_term:

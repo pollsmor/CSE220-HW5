@@ -1,8 +1,8 @@
 .data
 pair: .word 12 5
-terms: .word 16 9 1 7 5 8 7 6 0 -1
+terms: .word 2 2 4 3 5 0 0 -1
 p: .word 0
-N: .word 5
+N: .word 4
 
 .text:
 main:
@@ -42,7 +42,6 @@ main:
 		lw $t0, 8($t0)		# Update to next_term
 		bne $t0, $0, test_add_N_terms_loop
 
-	end_add_N_terms_test:
     	li $v0, 10
     	syscall
 
