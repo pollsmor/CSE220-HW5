@@ -71,6 +71,7 @@ add_N_terms_to_polynomial:
 		bne $s4, $0, notTerminalTerm
 		li $t0, -1
 		bne $s5, $t0, notTerminalTerm
+		
 		move $v0, $s3
 		j return_add_N_terms_to_polynomial 	# Pair (0, -1) found
 	
@@ -82,6 +83,9 @@ add_N_terms_to_polynomial:
 		move $a0, $s4
 		move $a1, $s5
 		jal create_term
+		
+		ble $v0, $0, advance_add_terms_loop	# Can't add invalid term
+		
 		sw $v0, 0($s0)
 		addi $s3, $s3, 1	# Increment terms added
 		addi $s2, $s2, -1	# Decrement N
@@ -281,11 +285,127 @@ remove_Nth_term:
 
 	return_remove_Nth_term:
 	jr $ra
-
-	jr $ra
 	
 add_poly:
+	addi $sp, $sp, -44
+	sw $ra, 0($sp)		
+	sw $s0, 4($sp)		# Store polynomial p
+	sw $s1, 8($sp)		# Store polynomial q
+	sw $s2, 12($sp)		# Store polynomial r
+	sw $s3, 16($sp)		# Store current term of p
+	sw $s4, 20($sp)		# Store current term of q
+	sw $s5, 24($sp)		# Terms array to use add_N_terms_to_polynomial
+	move $s0, $a0
+	move $s1, $a1
+	move $s2, $a2
+	addi $s5, $sp, 28	# Terms array takes up bytes 28-43 (enough for 4 words)
+	li $t0, -1		# Last two terms of terms array are (0, -1)
+	sw $0, 8($s5)
+	sw $t0, 12($s5)
+	
+	li $v0, 0
+	# Get base case out of the way: p and q both equal 0
+	check_if_p_is_0:
+	lw $t0, 0($s0)
+	bne $t0, $0, actual_add_poly
+	check_if_q_is_0:
+	lw $t0, 0($s1)
+	bne $t0, $0, actual_add_poly
+	sw $0, 0($s2)		# Store 0 in $s2
+	j return_add_poly
+	
+	actual_add_poly:
+	lw $s3, 0($s0)		# Get first term of p
+	lw $s4, 0($s1)		# Get first term of q
+	add_poly_loop:
+		# Load exponents
+		lw $t0, 4($s3)
+		lw $t1, 4($s4)
+		bgt $t0, $t1, pExpGreater
+		bgt $t1, $t0, qExpGreater
+		
+		pAndQExpEqual:		# Obtain coefficients, add them together by calling add_terms
+		move $a0, $s2		# Argument 0: Polynomial r
+		sw $t0, 4($s5)		# Exponent in 2nd word of int[] terms
+		lw $t0, 0($s3)
+		lw $t1, 0($s4)
+		add $t0, $t0, $t1	# Coefficient
+		sw $t0, 0($s5)		# Put coefficient in 1st word of int[] terms
+		move $a1, $s5		# Argument 1: int[] terms
+		li $a2, 1		# Argument 2: N
+		jal add_N_terms_to_polynomial
+		lw $s3, 8($s3)		# Move to next term of p
+		lw $s4, 8($s4)		# Move to next term of q
+		j advance_add_poly_loop
+		
+		pExpGreater:
+		move $a0, $s2		# Argument 0: Polynomial r
+		sw $t0, 4($s5)		# Exponent in 2nd word of int[] terms
+		lw $t0, 0($s3)
+		sw $t0, 0($s5)		# Put coefficient in 1st word of int[] terms
+		move $a1, $s5		# Argument 1: int[] term,s
+		li $a2, 1		# Argument 2: N
+		jal add_N_terms_to_polynomial
+		lw $s3, 8($s3)		# Move to next term of p
+		j advance_add_poly_loop
+		
+		qExpGreater:
+		move $a0, $s2		# Argument 0: Polynomial r
+		sw $t1, 4($s5)		# Exponent in 2nd word of int[] terms
+		lw $t0, 0($s4)
+		sw $t0, 0($s5)		# Put coefficient in 1st word of int[] terms
+		move $a1, $s5		# Argument 1: int[] term,s
+		li $a2, 1		# Argument 2: N
+		jal add_N_terms_to_polynomial
+		lw $s4, 8($s4)		# Move to next term of q
+		
+		advance_add_poly_loop:
+		beq $s3, $0, terms_in_poly_q_left_over
+		beq $s4, $0, terms_in_poly_p_left_over
+		j add_poly_loop
+
+	no_terms_in_either_poly_left_over:
+	# Check that the output value isn't 0 (null)
+	li $v0, 0
+	lbu $t0, 0($s2)
+	beq $t0, $0, return_add_poly
+	
+	li $v0, 1
+	j return_add_poly
+	
+	terms_in_poly_q_left_over:	# Link q to the end of r
+	beq $s4, $0, no_terms_in_either_poly_left_over
+	lw $t0, 0($s2)
+	findLastTermOfR:
+		move $t1, $t0		# Store previous value of $t0
+		lw $t0, 8($t0)
+		bne $t0, $0, findLastTermOfR
+	sw $s4, 8($t1)
+	li $v0, 1
+	j return_add_poly
+	
+	terms_in_poly_p_left_over:	# Link p to the end of r
+	beq $s3, $0, no_terms_in_either_poly_left_over
+	lw $t0, 0($s2)
+	findLastTermOfR2:
+		move $t1, $t0		# Store previous value of $t0
+		lw $t0, 8($t0)
+		bne $t0, $0, findLastTermOfR2
+	sw $s3, 8($t1)
+	li $v0, 1
+	
+	return_add_poly:
+	lw $ra, 0($sp)
+	lw $s0, 4($sp)
+	lw $s1, 8($sp)
+	lw $s2, 12($sp)
+	lw $s3, 16($sp)
+	lw $s4, 20($sp)
+	lw $s5, 24($sp)
+	addi $sp, $sp, 44
 	jr $ra
 	
 mult_poly:
+	
+
 	jr $ra

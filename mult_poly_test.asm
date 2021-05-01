@@ -10,32 +10,32 @@ N: .word 1
 
 .text:
 main:
-    la $a0, p
-    la $a1, p_pair
-    jal init_polynomial
+	la $a0, p
+	la $a1, p_pair
+    	jal init_polynomial
 
-    la $a0, p
-    la $a1, p_terms
-    lw $s2, N
-    jal add_N_terms_to_polynomial
+    	la $a0, p
+    	la $a1, p_terms
+    	lw $a2, N
+    	jal add_N_terms_to_polynomial
 
-    la $a0, q
-    la $a1, q_pair
-    jal init_polynomial
+    	la $a0, q
+    	la $a1, q_pair
+    	jal init_polynomial
 
-    la $a0, q
-    la $a1, q_terms
-    lw $s2, N
-    jal add_N_terms_to_polynomial
+    	la $a0, q
+    	la $a1, q_terms
+    	lw $a2, N
+    	jal add_N_terms_to_polynomial
 
-    la $a0, p
-    la $a1, q
-    la $a2, r
-    jal mult_poly
+    	la $a0, p
+    	la $a1, q
+    	la $a2, r
+    	jal mult_poly
 
-    #write test code
+   	#write test code
 
-    li $v0, 10
-    syscall
+    	li $v0, 10
+    	syscall
 
 .include "hw5.asm"

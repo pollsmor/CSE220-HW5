@@ -1,6 +1,6 @@
 .data
 pair: .word 12 5
-terms: .word 2 2 4 3 5 0 0 -1
+terms: .word 2 2 4 3 0 0 0 -1
 p: .word 0
 N: .word 4
 
