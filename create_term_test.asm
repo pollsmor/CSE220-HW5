@@ -1,6 +1,6 @@
 .data
-coeff: .word 2
-exp: .word -3
+coeff: .word 3
+exp: .word 4
 
 .text:
 main:
