@@ -1,7 +1,7 @@
 .data
 p_pair: .word 5 2
 p_terms: .word 7 1 0 -1
-q_pair: .word 3 2
+q_pair: .word -5 2
 q_terms: .word 1 1 0 -1
 p: .word 0
 q: .word 0
@@ -34,6 +34,31 @@ main:
     	jal mult_poly
 
    	#write test code
+   	move $a0, $v0
+   	li $v0, 1
+   	syscall
+   	li $a0, '\n'
+   	li $v0, 11
+   	syscall
+
+	# Print out polynomial
+	la $t0, r
+	lw $t0, 0($t0)
+	test_mult_poly_loop:
+		lw $a0, 0($t0)		# Coefficient
+		li $v0, 1
+		syscall
+		li $a0, ' '
+		li $v0, 11
+		syscall
+		lw $a0, 4($t0)		# Exponent
+		li $v0, 1
+		syscall
+		li $a0, '\n'
+		li $v0, 11
+		syscall
+		lw $t0, 8($t0)		# Update to next_term
+		bne $t0, $0, test_mult_poly_loop
 
     	li $v0, 10
     	syscall

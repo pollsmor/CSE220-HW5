@@ -193,7 +193,6 @@ update_N_terms_in_polynomial:
 		move $t0, $sp		
 		li $t1, 0		# Loop counter denoting amount of bytes to move on $sp
 		sll $t2, $s3, 2		# End condition = 4 * relevant elements on $sp
-		addi $s2, $s2, -1	# Decrement N
 		contains_loop:
 			lw $t3, 0($t0)
 			beq $t3, $s5, advance_update_terms_loop
@@ -204,6 +203,7 @@ update_N_terms_in_polynomial:
 		addi $sp, $sp, -4
 		sw $s5, 0($sp)
 		addi $s3, $s3, 1	# Increment terms updated
+		addi $s2, $s2, -1	# Decrement N
 		# ======================================================================================
 	
 		advance_update_terms_loop:
@@ -315,8 +315,23 @@ add_poly:
 	j return_add_poly
 	
 	actual_add_poly:
+	li $v0, 1
+	# If one polynomial is empty, return the other
 	lw $s3, 0($s0)		# Get first term of p
 	lw $s4, 0($s1)		# Get first term of q
+	
+	beq $s3, $0, return_q
+	beq $s4, $0, return_p
+	j add_poly_loop
+	
+	return_q:
+	sw $s4, 0($s2)
+	j return_add_poly
+	
+	return_p:
+	sw $s3, 0($s2)
+	j return_add_poly
+	
 	add_poly_loop:
 		# Load exponents
 		lw $t0, 4($s3)
@@ -333,7 +348,15 @@ add_poly:
 		sw $t0, 0($s5)		# Put coefficient in 1st word of int[] terms
 		move $a1, $s5		# Argument 1: int[] terms
 		li $a2, 1		# Argument 2: N
+		jal update_N_terms_in_polynomial	# First call update terms, if 0 updated terms add
+		bne $v0, $0, skip_add_terms
+		
+		move $a0, $s2
+		move $a1, $s5
+		li $a2, 1
 		jal add_N_terms_to_polynomial
+		
+		skip_add_terms:
 		lw $s3, 8($s3)		# Move to next term of p
 		lw $s4, 8($s4)		# Move to next term of q
 		j advance_add_poly_loop
@@ -406,6 +429,76 @@ add_poly:
 	jr $ra
 	
 mult_poly:
-	
+	addi $sp, $sp, -48
+	sw $ra, 0($sp)
+	sw $s0, 4($sp)			# Store polynomial p
+	sw $s1, 8($sp)			# Store polynomial q
+	sw $s2, 12($sp)			# Store polynomial r
+	sw $s3, 16($sp)			# Store current term in p
+	sw $s4, 20($sp)			# Store current term in q
+	sw $s5, 24($sp)			# Store address of 4-word long array for pair array
+	sw $s6, 28($sp)			# Store temporary monomial
+	move $s0, $a0			
+	move $s1, $a1			
+	move $s2, $a2			
+	addi $s5, $sp, 32		# Pair array is from 32($sp) to 47($sp), store (0, -1) in the last two words
+	li $t0, -1
+	sw $0, 8($s5)
+	sw $t0, 12($s5)
 
+	li $v0, 0
+	# If either p or q are null, result is null.
+	lw $t0, 0($s0)
+	beq $t0, $0, return_mult_poly
+	lw $t0, 0($s1)
+	beq $t0, $0, return_mult_poly
+	
+	lw $s3, 0($s0)			# First term in p
+	mult_poly_p_loop:		# Loop through each element in p
+		lw $s4, 0($s1)			# Reset q to start
+		mult_poly_q_loop:		# Loop through each element in q
+			# Call init_polynomial then add that polynomial to r
+			# Need to allocate memory for $a0: polynomial argument
+			li $v0, 9
+			li $a0, 4
+			syscall
+			move $a0, $v0
+			move $s6, $v0		# Need this polynomial again to call add_poly later
+			
+			lw $t0, 4($s3)		# Exponent of term in p
+			lw $t1, 4($s4)		# Exponent of term in q
+			add $t0, $t0, $t1	# exp_new = exp_p + exp_q
+			sw $t0, 4($s5)		# Store exponent in word 4-7 of pair array
+			lw $t0, 0($s3)		# Coefficient of term in p
+			lw $t1, 0($s4)		# Coefficient of term in q
+			mult $t0, $t1
+			mflo $t0		# Move product into $t0
+			sw $t0, 0($s5)		# Store coefficient in word 0-3 of pair array
+			move $a1, $s5		# Pairs array
+			jal init_polynomial
+			ble $v0, $0, advance_mult_poly_q_loop	# Shouldn't ever happen? Just in case
+			# Call add_poly with r and the newly initiated monomial										
+			move $a0, $s2
+			move $a1, $s6
+			move $a2, $s2
+			jal add_poly
+			
+			advance_mult_poly_q_loop:
+			lw $s4, 8($s4)		# Advance to next term of q	
+			bne $s4, $0, mult_poly_q_loop
+	
+		lw $s3, 8($s3)		# Advance to next term of p
+		bne $s3, $0, mult_poly_p_loop
+
+	li $v0, 1
+	return_mult_poly:
+	lw $ra, 0($sp)
+	lw $s0, 4($sp)
+	lw $s1, 8($sp)
+	lw $s2, 12($sp)
+	lw $s3, 16($sp)
+	lw $s4, 20($sp)
+	lw $s5, 24($sp)
+	lw $s6, 28($sp)
+	addi $sp, $sp, 48
 	jr $ra

@@ -1,9 +1,9 @@
 .data
 pair: .word 4 3
 terms: .word  2 2 5 0 0 -1
-new_terms: .word 1 3 3 3 1 0 0 -1
+new_terms: .word 1 3 3 3 1 0 5 2 0 -1
 p: .word 0
-N: .word 0
+N: .word 3
 
 .text:
 main:
