@@ -456,13 +456,28 @@ mult_poly:
 	move $s7, $v0
 	sw $0, 0($s7)
 
-	li $v0, 0
-	# If either p or q are null, result is null.
+	li $v0, 1
+	# If either p or q are null, return the other.
 	lw $t0, 0($s0)
-	beq $t0, $0, return_mult_poly
-	lw $t0, 0($s1)
-	beq $t0, $0, return_mult_poly
+	lw $t1, 0($s1)
+	beq $t0, $0, return_q_mult
+	beq $t1, $0, return_p_mult
+	j actual_mult_poly
 	
+	return_q_mult:
+	beq $t1, $0, return_0
+	sw $t1, 0($s2)
+	j return_mult_poly
+	
+	return_p_mult:
+	sw $t0, 0($s2)
+	j return_mult_poly
+	
+	return_0:
+	li $v0, 0
+	j return_mult_poly
+	
+	actual_mult_poly:
 	lw $s3, 0($s0)			# First term in p
 	mult_poly_p_loop:		# Loop through each element in p
 		lw $s4, 0($s1)			# Reset q to start
@@ -513,6 +528,7 @@ mult_poly:
 	li $v0, 1
 	lw $t0, 0($s7)
 	sw $t0, 0($s2)	# Put final address of $s7 (temporary output polynomial) into r for returning
+	
 	return_mult_poly:
 	lw $ra, 0($sp)
 	lw $s0, 4($sp)
