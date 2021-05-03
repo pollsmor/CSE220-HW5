@@ -1,8 +1,8 @@
 .data
-p_pair: .word 3 3
-p_terms: .word 1 1 3 2 0 -1
-q_pair: .word 6 2
-q_terms: .word 10 4 3 7 8 9 6 4 1 8 0 -1
+p_pair: .word 1 11
+p_terms: .word 3 6
+q_pair: .word 0 -1
+q_terms: .word 5 10 15 8 0 -1
 p: .word 0
 q: .word 0
 r: .word 0

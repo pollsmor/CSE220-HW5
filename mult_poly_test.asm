@@ -6,7 +6,7 @@ q_terms: .word 1 8 0 -1
 p: .word 0
 q: .word 0
 r: .word 0
-N: .word 10
+N: .word 2
 
 .text:
 main:
@@ -32,6 +32,7 @@ main:
     	la $a1, q
     	la $a2, r
     	jal mult_poly
+    	move $s0, $v0
 
    	#write test code
    	move $a0, $v0
@@ -40,6 +41,8 @@ main:
    	li $a0, '\n'
    	li $v0, 11
    	syscall
+   	
+   	beq $s0, $0, skip_test_mult
 
 	# Print out polynomial
 	la $t0, r
@@ -60,10 +63,7 @@ main:
 		lw $t0, 8($t0)		# Update to next_term
 		bne $t0, $0, test_mult_poly_loop
 
-	la $a0, r
-	li $v0, 1
-	syscall
-
+	skip_test_mult:
     	li $v0, 10
     	syscall
 

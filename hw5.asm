@@ -71,7 +71,6 @@ add_N_terms_to_polynomial:
 		bne $s4, $0, notTerminalTerm
 		li $t0, -1
 		bne $s5, $t0, notTerminalTerm
-		
 		move $v0, $s3
 		j return_add_N_terms_to_polynomial 	# Pair (0, -1) found
 	
@@ -79,13 +78,12 @@ add_N_terms_to_polynomial:
 		# Check exponent is not already in the polynomial
 		lw $t0, 0($s0)
 		bne $t0, $0, exp_exists_loop
+		
 		# Empty polynomial, create term and put it as head
 		move $a0, $s4
 		move $a1, $s5
 		jal create_term
-		
 		ble $v0, $0, advance_add_terms_loop	# Can't add invalid term
-		
 		sw $v0, 0($s0)
 		addi $s3, $s3, 1	# Increment terms added
 		addi $s2, $s2, -1	# Decrement N
@@ -101,7 +99,6 @@ add_N_terms_to_polynomial:
 		move $a0, $s4
 		move $a1, $s5
 		jal create_term
-		
 		ble $v0, $0, advance_add_terms_loop
 	
 		# Special case for first term in polynomial
@@ -303,7 +300,8 @@ add_poly:
 	move $s2, $a2
 	addi $s5, $sp, 28	# Terms array takes up bytes 28-43 (enough for 4 words)
 	sw $0, 0($s2)		# Verify r is empty
-	li $t0, -1		# Last two terms of terms array are (0, -1)
+	# End terms array with (0, -1)
+	li $t0, -1		
 	sw $0, 8($s5)
 	sw $t0, 12($s5)
 	
@@ -323,7 +321,6 @@ add_poly:
 	# If one polynomial is empty, return the other
 	lw $s3, 0($s0)		# Get first term of p
 	lw $s4, 0($s1)		# Get first term of q
-	
 	beq $s3, $0, return_q
 	beq $s4, $0, return_p
 	j add_poly_loop
@@ -355,12 +352,12 @@ add_poly:
 		li $a2, 1		# Argument 2: N
 		jal update_N_terms_in_polynomial	# First call update terms, if 0 updated terms add		
 		bne $v0, $0, skip_add_terms
-
+		# =================================
 		move $a0, $s2
 		move $a1, $s5
 		li $a2, 1
 		jal add_N_terms_to_polynomial
-		
+		# =================================
 		skip_add_terms:	
 		lw $s3, 8($s3)		# Move to next term of p
 		lw $s4, 8($s4)		# Move to next term of q
@@ -446,11 +443,13 @@ mult_poly:
 	move $s0, $a0			
 	move $s1, $a1			
 	move $s2, $a2			
-	addi $s5, $sp, 36	# Pair array is from 32($sp) to 47($sp), store (0, -1) in the last two words
+	addi $s5, $sp, 36	# Pair array is from 36($sp) to 51($sp)
 	sw $0, 0($s2)		# Verify r is empty
+	# Store (0, -1) in the last two words
 	li $t0, -1
 	sw $0, 8($s5)
 	sw $t0, 12($s5)
+	# Allocate space for blank output polynomial (r')
 	li $v0, 9
 	li $a0, 4
 	syscall
@@ -513,7 +512,7 @@ mult_poly:
 
 	li $v0, 1
 	lw $t0, 0($s7)
-	sw $t0, 0($s2)
+	sw $t0, 0($s2)	# Put final address of $s7 (temporary output polynomial) into r for returning
 	return_mult_poly:
 	lw $ra, 0($sp)
 	lw $s0, 4($sp)
