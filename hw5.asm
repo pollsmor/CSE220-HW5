@@ -177,18 +177,33 @@ update_N_terms_in_polynomial:
 	
 		notTerminalTerm2:					
 		# Don't need to create new term, just update old one
-		beq $s4, $0, advance_update_terms_loop		# Coefficient of 0
 		blt $s5, $0, advance_update_terms_loop		# Exponent < 0
 		
 		lw $t0, 0($s0)		# First term of polynomial
 		find_where_to_update_loop:
 			lw $t1, 4($t0)			# Get exponent of current term
 			beq $t1, $s5, spot_found2	# Replace coefficient at current term	
+			move $t2, $t0			# Store previous term in case it has to delete a term
 			lw $t0, 8($t0)			# Move to next term
 			bne $t0, $0, find_where_to_update_loop
 		j advance_update_terms_loop		# Exponent not found in polynomial, skip
 		
 		spot_found2:		
+		# Coefficient of 0 - delete term
+		bne $s4, $0, coeffNot0
+		
+		# Base case for if first term has to be deleted
+		lw $t2, 0($s0)
+		bne $t2, $t0, not_first_term
+		sw $0, 0($s0)
+		j increment_terms_updated
+		
+		not_first_term:
+		lw $t0, 8($t0)		# Get next term
+		sw $t0, 8($t2)		# Store it as next of previous term	
+		j increment_terms_updated
+		
+		coeffNot0:
 		sw $s4, 0($t0)		# Update coefficient at appropriate term
 		move $t0, $sp		
 		li $t1, 0		# Loop counter denoting amount of bytes to move on $sp
@@ -200,6 +215,7 @@ update_N_terms_in_polynomial:
 			addi $t1, $t1, 4
 			blt $t1, $t2, contains_loop
 		
+		increment_terms_updated:
 		addi $sp, $sp, -4
 		sw $s5, 0($sp)
 		addi $s3, $s3, 1	# Increment terms updated
@@ -511,6 +527,13 @@ mult_poly:
 			li $a0, 4
 			syscall
 			move $s7, $v0
+			
+			move $a0, $s7
+			li $v0, 1
+			syscall
+			li $a0, '\n'
+			li $v0, 11
+			syscall
 			
 			# Call add_poly with r and the newly initiated monomial																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																				
 			move $a0, $t0

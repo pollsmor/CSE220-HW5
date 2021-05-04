@@ -1,7 +1,7 @@
 .data
-pair: .word 4 3
-terms: .word  2 2 5 0 0 -1
-new_terms: .word 1 3 3 3 1 0 5 2 0 -1
+pair: .word 5 0
+terms: .word 3 3 0 -1
+new_terms: .word 1 3 0 0 0 -1
 p: .word 0
 N: .word 3
 
@@ -9,12 +9,12 @@ N: .word 3
 main:
 	la $a0, p
 	la $a1, pair
-    	#jal init_polynomial
+    	jal init_polynomial
 
     	la $a0, p
     	la $a1, terms
     	lw $a2, N
-    	#jal add_N_terms_to_polynomial
+    	jal add_N_terms_to_polynomial
 	
     	la $a0, p
     	la $a1, new_terms
@@ -33,6 +33,7 @@ main:
     	# Print out polynomial again
 	la $t0, p
 	lw $t0, 0($t0)
+	beq $t0, $0, skip_update_test
 	test_update_N_terms_loop:
 		lw $a0, 0($t0)		# Coefficient
 		li $v0, 1
