@@ -177,33 +177,18 @@ update_N_terms_in_polynomial:
 	
 		notTerminalTerm2:					
 		# Don't need to create new term, just update old one
+		beq $s4, $0, advance_update_terms_loop
 		blt $s5, $0, advance_update_terms_loop		# Exponent < 0
 		
 		lw $t0, 0($s0)		# First term of polynomial
 		find_where_to_update_loop:
 			lw $t1, 4($t0)			# Get exponent of current term
 			beq $t1, $s5, spot_found2	# Replace coefficient at current term	
-			move $t2, $t0			# Store previous term in case it has to delete a term
 			lw $t0, 8($t0)			# Move to next term
 			bne $t0, $0, find_where_to_update_loop
 		j advance_update_terms_loop		# Exponent not found in polynomial, skip
 		
 		spot_found2:		
-		# Coefficient of 0 - delete term
-		bne $s4, $0, coeffNot0
-		
-		# Base case for if first term has to be deleted
-		lw $t2, 0($s0)
-		bne $t2, $t0, not_first_term
-		sw $0, 0($s0)
-		j increment_terms_updated
-		
-		not_first_term:
-		lw $t0, 8($t0)		# Get next term
-		sw $t0, 8($t2)		# Store it as next of previous term	
-		j increment_terms_updated
-		
-		coeffNot0:
 		sw $s4, 0($t0)		# Update coefficient at appropriate term
 		move $t0, $sp		
 		li $t1, 0		# Loop counter denoting amount of bytes to move on $sp
